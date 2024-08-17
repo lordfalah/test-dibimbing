@@ -5,7 +5,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SheetFooter } from "@/components/ui/sheet";
-
 import {
   Form,
   FormControl,
@@ -14,58 +13,90 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { SchemaNote, TNoteSchema } from "@/schemas/note";
+import { SchemaNote, type TNoteSchema } from "@/schemas/note";
 import { useForm } from "react-hook-form";
-import FormSheet from "./form";
-import { useRouter, useSearchParams } from "next/navigation";
+import FormSheet from "./form-sheet";
+import { useRouter } from "next/navigation";
+import { Service } from "@/services/note";
+import { useToast } from "../ui/use-toast";
+import { TErrorApiRoute } from "@/types/note.type";
+import { isErrorApiRoute } from "@/lib/validation";
 
-const FormEdit: React.FC<{ children: React.ReactNode; data: TNoteSchema }> = ({
+type TFormEdit = {
+  children: React.ReactNode;
+  data: TNoteSchema;
+};
+
+const FormEdit: React.FC<TFormEdit> = ({
   children,
-  data,
+  data: { body, title, id },
 }) => {
+  const { toast } = useToast();
   const form = useForm<TNoteSchema>({
     resolver: zodResolver(SchemaNote),
     defaultValues: {
-      body: data.body || "",
-      title: data.title || "",
+      body: body || "",
+      title: title || "",
     },
   });
-  const searchParams = useSearchParams();
 
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
 
   async function onSubmit(values: TNoteSchema) {
-    setIsOpen(false);
     try {
-      if (!data.id) throw new Error("Data tidak ada");
-
-      const req = await fetch(`${process.env.NEXT_PUBLIC_HOST}/api/note`, {
-        method: "PUT",
-        body: JSON.stringify({ ...values, id: data.id }),
+      if (!id) throw new Error("ID not found");
+      const { message, status, errors } = await Service.putNote({
+        ...values,
+        id,
       });
-      const res = await req.json();
-      console.log(res);
+      if (errors) {
+        toast({ variant: "destructive", title: status, description: message });
+        Object.keys(errors).forEach((key) => {
+          return form.setError(key as keyof TNoteSchema, {
+            type: "server",
+            message: errors[key as keyof typeof errors],
+          });
+        });
+        return;
+      }
+
+      setIsOpen(false);
+      toast({ variant: "success", title: status, description: message });
       form.reset();
       router.refresh();
     } catch (error) {
-      console.log(error);
+      if (isErrorApiRoute(error)) {
+        const { message, status }: TErrorApiRoute = error;
+        toast({
+          variant: "destructive",
+          title: status,
+          description: message,
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Unexpected Error",
+          description: "An unexpected error occurred. Please try again later.",
+        });
+      }
     }
   }
+
+  const handleOnChangeSheet = (value: boolean) => {
+    if (!form.formState.isValid) {
+      setIsOpen(true);
+    }
+    form.reset();
+    setIsOpen(value);
+  };
 
   return (
     <FormSheet
       btnELement={children}
       title="Update Note"
       open={isOpen}
-      onOpenChange={(value) => {
-        if (!form.formState.isValid) {
-          setIsOpen(true);
-        }
-
-        form.reset();
-        setIsOpen(value);
-      }}
+      onOpenChange={handleOnChangeSheet}
     >
       <Form {...form}>
         <form
@@ -91,10 +122,10 @@ const FormEdit: React.FC<{ children: React.ReactNode; data: TNoteSchema }> = ({
               control={form.control}
               name="body"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="flex flex-col">
                   <FormLabel>Body</FormLabel>
                   <FormControl>
-                    <Input placeholder="xxx" {...field} />
+                    <textarea placeholder="Type your body here." {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

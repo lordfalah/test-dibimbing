@@ -10,11 +10,11 @@ import {
 
 type TFormSheet = {
   children: React.ReactNode;
+  btnELement: React.ReactNode;
   title: string;
   description?: string;
   open: boolean;
   onOpenChange: (e: boolean) => void;
-  btnELement: React.ReactNode;
 };
 
 const FormSheet: React.FC<TFormSheet> = ({
@@ -31,10 +31,7 @@ const FormSheet: React.FC<TFormSheet> = ({
       <SheetContent>
         <SheetHeader>
           <SheetTitle>{title}</SheetTitle>
-          <SheetDescription>
-            {description}
-            {/* Make changes to your profile here. Click save when you're done. */}
-          </SheetDescription>
+          <SheetDescription>{description}</SheetDescription>
         </SheetHeader>
 
         {children}

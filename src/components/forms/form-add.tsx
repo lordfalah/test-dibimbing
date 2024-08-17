@@ -5,7 +5,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SheetFooter } from "@/components/ui/sheet";
-
 import {
   Form,
   FormControl,
@@ -14,15 +13,22 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { SchemaNote, TNoteSchema } from "@/schemas/note";
+import { SchemaNote, type TNoteSchema } from "@/schemas/note";
 import { useForm } from "react-hook-form";
-import FormSheet from "./form";
-import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
+import FormSheet from "./form-sheet";
+import { usePathname, useRouter } from "next/navigation";
+import { Plus, ArrowLeft } from "lucide-react";
+import { Service } from "@/services/note";
+import { useToast } from "../ui/use-toast";
+import { TErrorApiRoute } from "@/types/note.type";
+import { isErrorApiRoute } from "@/lib/validation";
+import Link from "next/link";
 
 const FormAdd: React.FC = () => {
+  const { toast } = useToast();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
+  const pathName = usePathname();
   const form = useForm<TNoteSchema>({
     resolver: zodResolver(SchemaNote),
     defaultValues: {
@@ -32,42 +38,76 @@ const FormAdd: React.FC = () => {
   });
 
   async function onSubmit(values: TNoteSchema) {
-    setIsOpen(false);
     try {
-      const req = await fetch(`${process.env.NEXT_PUBLIC_HOST}/api/note`, {
-        method: "POST",
-        body: JSON.stringify(values),
-      });
-      const res = await req.json();
+      const { errors, status, message } = await Service.postNote(values);
+      if (errors) {
+        toast({ variant: "destructive", title: status, description: message });
+        Object.keys(errors).forEach((key) => {
+          return form.setError(key as keyof TNoteSchema, {
+            type: "server",
+            message: errors[key as keyof typeof errors],
+          });
+        });
+        return;
+      }
+
+      toast({ variant: "success", title: status, description: message });
       form.reset();
       router.refresh();
+      setIsOpen(false);
     } catch (error) {
-      console.log(error);
+      if (isErrorApiRoute(error)) {
+        const { message, status }: TErrorApiRoute = error;
+        toast({
+          variant: "destructive",
+          title: status,
+          description: message,
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Unexpected Error",
+          description: "An unexpected error occurred. Please try again later.",
+        });
+      }
     }
   }
+
+  const handleOnChangeSheet = (value: boolean) => {
+    if (!form.formState.isValid) {
+      setIsOpen(true);
+    }
+    form.reset();
+    setIsOpen(value);
+  };
 
   return (
     <FormSheet
       btnELement={
         <div className="flex">
-          <Button
-            type="button"
-            className="group mx-auto size-12 rounded-full p-2"
-          >
-            <Plus className="transition-transform ease-in group-hover:rotate-90" />
-          </Button>
+          {pathName === "/" ? (
+            <Button
+              type="button"
+              className="group mx-auto size-12 rounded-full p-2"
+            >
+              <Plus className="transition-transform ease-in group-hover:rotate-90" />
+            </Button>
+          ) : (
+            <Button
+              asChild
+              type="button"
+              className="group mx-auto size-12 rounded-full p-2"
+            >
+              <Link href={"/"}>
+                <ArrowLeft />
+              </Link>
+            </Button>
+          )}
         </div>
       }
       title="Add Note"
       open={isOpen}
-      onOpenChange={(value) => {
-        if (!form.formState.isValid) {
-          setIsOpen(true);
-        }
-
-        form.reset();
-        setIsOpen(value);
-      }}
+      onOpenChange={handleOnChangeSheet}
     >
       <Form {...form}>
         <form
@@ -93,10 +133,10 @@ const FormAdd: React.FC = () => {
               control={form.control}
               name="body"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="flex flex-col">
                   <FormLabel>Body</FormLabel>
                   <FormControl>
-                    <Input placeholder="xxx" {...field} />
+                    <textarea placeholder="Type your body here." {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

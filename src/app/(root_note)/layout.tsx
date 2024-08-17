@@ -3,10 +3,8 @@ import React from "react";
 
 export default function NoteLayout({
   children,
-  params,
 }: Readonly<{
   children: React.ReactNode;
-  params: { id: string };
 }>) {
   return (
     <div
@@ -20,7 +18,6 @@ export default function NoteLayout({
           <FormAdd />
         </div>
       </aside>
-
       {children}
     </div>
   );

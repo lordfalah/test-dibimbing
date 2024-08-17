@@ -2,76 +2,74 @@
 
 import React from "react";
 import { Pencil, Trash, View } from "lucide-react";
-import { Button } from "./ui/button";
-import {
-  useParams,
-  usePathname,
-  useRouter,
-  useSearchParams,
-} from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { useParams, useRouter } from "next/navigation";
 import { formatedDate } from "@/lib/utils";
-import FormEdit from "./forms/form-edit";
+import FormEdit from "@/components/forms/form-edit";
 import Link from "next/link";
-import { useToast } from "./ui/use-toast";
+import { useToast } from "@/components/ui/use-toast";
+import { type Note } from "@prisma/client";
+import { Service } from "@/services/note";
+import { isErrorApiRoute } from "@/lib/validation";
+import { TErrorApiRoute } from "@/types/note.type";
 
 type TCardNote = {
-  title: string;
-  body: string;
-  createdAt: Date;
   className?: string;
-  id: string;
+  backgroundColor?: string;
+  data: Note;
 };
 
 const CardNote: React.FC<TCardNote> = ({
-  body,
-  createdAt,
-  title,
+  data: { body, createdAt, id, title },
   className,
-  id,
+  backgroundColor = "bg-yellow-300",
 }) => {
-  const searchParams = useSearchParams();
-  const pathname = usePathname();
-  const { replace, push, refresh } = useRouter();
+  const { push, refresh } = useRouter();
   const params = useParams();
   const { toast } = useToast();
 
   const handleDeleteNote = async (id: string) => {
     try {
-      const req = await fetch(
-        `${process.env.NEXT_PUBLIC_HOST}/api/note?id=${id}`,
-        {
-          method: "DELETE",
-          cache: "no-store",
-        },
-      );
-      const res = await req.json();
-
-      push("/");
-      toast({
-        title: "Delete",
-        description: "Success delete note",
-      });
-      return res;
+      const { errors, status, message } = await Service.deleteNote(id);
+      if (errors) {
+        toast({
+          variant: "destructive",
+          title: status,
+          description: message,
+        });
+      } else {
+        push("/");
+        toast({
+          variant: "success",
+          title: "Delete",
+          description: "Success delete note",
+        });
+      }
     } catch (error) {
-      throw new Error("INTERNAL SERVER ERROR");
+      if (isErrorApiRoute(error)) {
+        const { message, status }: TErrorApiRoute = error;
+        toast({
+          variant: "destructive",
+          title: status,
+          description: message,
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Unexpected Error",
+          description: "An unexpected error occurred. Please try again later.",
+        });
+      }
     } finally {
       refresh();
     }
   };
 
-  function handleSearch(value: string) {
-    const params = new URLSearchParams(searchParams);
-    if (value) {
-      params.set("note_id", value);
-    } else {
-      params.delete("note_id");
-    }
-    replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }
-
   return (
     <div className="group relative inline-block focus:outline-none focus:ring">
-      <span className="absolute inset-0 translate-x-1.5 translate-y-1.5 bg-yellow-300 transition-transform group-hover:translate-x-0 group-hover:translate-y-0"></span>
+      <span
+        className={`absolute inset-0 translate-x-1.5 translate-y-1.5 transition-transform group-hover:translate-x-0 group-hover:translate-y-0 ${backgroundColor}`}
+      ></span>
 
       <div className="relative inline-block border-2 border-current px-8 py-3 text-sm tracking-widest text-black group-active:text-opacity-75">
         <div
@@ -109,7 +107,7 @@ const CardNote: React.FC<TCardNote> = ({
                 </Button>
               )}
 
-              <FormEdit data={{ title, body, id }}>
+              <FormEdit data={{ body, title, id }}>
                 <Button
                   type="button"
                   className="group size-12 rounded-full p-2"
