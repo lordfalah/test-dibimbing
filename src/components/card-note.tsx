@@ -8,10 +8,10 @@ import { formatedDate } from "@/lib/utils";
 import FormEdit from "@/components/forms/form-edit";
 import Link from "next/link";
 import { useToast } from "@/components/ui/use-toast";
-import { Note } from "@prisma/client";
 import { Service } from "@/services/note";
 import { isErrorApiRoute } from "@/lib/validation";
 import { TErrorApiRoute } from "@/types/note.type";
+import { Note } from "@prisma/client";
 
 type TCardNote = {
   className?: string;
