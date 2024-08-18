@@ -15,11 +15,11 @@ import {
 } from "@/components/ui/form";
 import { SchemaNote, type TNoteSchema } from "@/schemas/note";
 import { useForm } from "react-hook-form";
-import FormSheet from "./form-sheet";
+import FormSheet from "@/components/forms/form-sheet";
 import { usePathname, useRouter } from "next/navigation";
 import { Plus, ArrowLeft } from "lucide-react";
 import { Service } from "@/services/note";
-import { useToast } from "../ui/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { TErrorApiRoute } from "@/types/note.type";
 import { isErrorApiRoute } from "@/lib/validation";
 import Link from "next/link";
