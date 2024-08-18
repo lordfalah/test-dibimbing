@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { Fragment, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SheetFooter } from "@/components/ui/sheet";
+import { Loader2 } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -134,7 +135,16 @@ const FormEdit: React.FC<TFormEdit> = ({
           </div>
 
           <SheetFooter>
-            <Button type="submit">Save changes</Button>
+            <Button type="submit" disabled={form.formState.isSubmitting}>
+              {form.formState.isSubmitting ? (
+                <Fragment>
+                  Please wait
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                </Fragment>
+              ) : (
+                "Save changes"
+              )}
+            </Button>
           </SheetFooter>
         </form>
       </Form>

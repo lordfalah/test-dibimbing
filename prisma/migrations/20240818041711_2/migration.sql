@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Notes" ALTER COLUMN "body" SET DATA TYPE VARCHAR(255);

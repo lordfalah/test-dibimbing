@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { Fragment, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,7 @@ import { SchemaNote, type TNoteSchema } from "@/schemas/note";
 import { useForm } from "react-hook-form";
 import FormSheet from "@/components/forms/form-sheet";
 import { usePathname, useRouter } from "next/navigation";
-import { Plus, ArrowLeft } from "lucide-react";
+import { Plus, ArrowLeft, Loader2 } from "lucide-react";
 import { Service } from "@/services/note";
 import { useToast } from "@/components/ui/use-toast";
 import { TErrorApiRoute } from "@/types/note.type";
@@ -145,7 +145,16 @@ const FormAdd: React.FC = () => {
           </div>
 
           <SheetFooter>
-            <Button type="submit">Save changes</Button>
+            <Button type="submit" disabled={form.formState.isSubmitting}>
+              {form.formState.isSubmitting ? (
+                <Fragment>
+                  Please wait
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                </Fragment>
+              ) : (
+                "Save changes"
+              )}
+            </Button>
           </SheetFooter>
         </form>
       </Form>
